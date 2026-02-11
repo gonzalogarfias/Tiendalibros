@@ -20,7 +20,7 @@ Una aplicación web para la gestión de una tienda de libros, que incluye funcio
 ## Uso 
 1. una ves clonado el repositorio ingresa a los settings para poder configurar el archivo a tus bases de datos, el codigo tiene una funcion de envio de correos para lo cual es necesario crear una clave de aplicacion desde tu gmail importante tenter la verificacion de dos pasos activada
 
-2. en la consola de comandos de el proyecto hacer los comandos `python manage.py makemigrations` y a continuacion `python manage.py migrate` para poder generar las migraciones a la base de datos y asi evitar algun error al ejecutar.
+2. en la consola de comandos de el proyecto hacer el comando `python manage.py migrate` para poder generar la base de datos y asi evitar algun error al ejecutar.
 
 3. Inicia el servidor de desarrollo (ejemplo para Django: `python manage.py runserver`)
 

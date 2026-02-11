@@ -1,0 +1,327 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Librería - Con Handlebars{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="hero-button-container">
+        <a href="#libros" class="btn btn-primary btn-lg">Explorar Libros</a>
+    </div>
+</div>
+
+<div class="container my-4" id="libros">
+    <h2 class="mb-4">Nuestros Libros (Carga Dinámica)</h2>
+    
+    <!-- Barra de búsqueda -->
+    <div class="mb-4">
+        <div class="input-group">
+            <input type="text" id="searchInput" class="form-control" placeholder="Buscar por título o autor...">
+            <button class="btn btn-primary" onclick="searchBooks()">Buscar</button>
+        </div>
+    </div>
+    
+    <!-- Filtros -->
+    <div class="btn-group mb-4" role="group">
+        <button class="btn btn-outline-primary active" onclick="loadBooks('all')">
+            Todos
+        </button>
+        <button class="btn btn-outline-success" onclick="loadBooks('virtual')">
+            Libros Virtuales (Leer Gratis)
+        </button>
+        <button class="btn btn-outline-danger" onclick="loadBooks('fisico')">
+            Libros Físicos (Comprar)
+        </button>
+    </div>
+    
+    <!-- Contador de libros -->
+    <p class="text-muted" id="bookCount">
+        Cargando libros...
+    </p>
+    
+    <!-- Loader -->
+    <div id="loader" class="text-center my-5" style="display: none;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+        <p class="mt-2">Cargando libros...</p>
+    </div>
+    
+    <!-- Contenedor de libros -->
+    <div id="booksContainer" class="row">
+        
+    </div>
+    
+    <!-- Mensaje de error -->
+    <div id="errorMessage" class="alert alert-danger" style="display: none;"></div>
+</div>
+
+{% verbatim %}
+<script id="book-template" type="text/x-handlebars-template">
+    {{#each books}}
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 shadow-sm book-card" data-book-id="{{id}}">
+            {{#if cover_image_url}}
+                <img src="{{cover_image_url}}" class="card-img-top" style="height: 250px; object-fit: cover;" alt="{{title}}">
+            {{else}}
+                <div class="bg-light text-center p-5" style="height: 250px;">
+                    <h5 class="text-muted">Sin portada</h5>
+                </div>
+            {{/if}}
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">{{title}}</h5>
+                <p class="card-text text-muted">por {{author}}</p>
+                <p class="card-text"><strong>${{price}}</strong></p>
+                <p class="card-text small">{{description}}</p>
+                {{#if uploaded_by_username}}
+                    <p class="card-text small text-muted">Subido por: {{uploaded_by_username}}</p>
+                {{/if}}
+                <div class="mt-auto">
+                    {{#if is_virtual}}
+                        <a href="/read/{{id}}/" class="btn btn-success w-100">
+                            Leer Ahora
+                        </a>
+                    {{else}}
+                        {{#if (gt stock 0)}}
+                            <button class="btn btn-primary w-100" onclick="buyBook({{id}})">
+                                Comprar (Stock: {{stock}})
+                            </button>
+                        {{else}}
+                            <button class="btn btn-secondary w-100" disabled>
+                                Sin Stock
+                            </button>
+                        {{/if}}
+                    {{/if}}
+                </div>
+            </div>
+            <div class="card-footer text-center small">
+                {{#if is_virtual}}
+                    <span class="badge bg-success">Lectura Online Gratis</span>
+                {{else}}
+                    <span class="badge bg-danger">Libro Físico</span>
+                {{/if}}
+            </div>
+        </div>
+    </div>
+    {{/each}}
+</script>
+{% endverbatim %}
+
+<!-- Incluir Handlebars desde CDN -->
+<script src="https://cdn.jsdelivr.net/npm/handlebars@latest/dist/handlebars.js"></script>
+
+<script>
+// Registrar helper personalizado para Handlebars
+Handlebars.registerHelper('gt', function(a, b) {
+    return a > b;
+});
+
+// Variable para almacenar el filtro actual
+let currentFilter = 'all';
+
+// Función para mostrar el loader
+function showLoader() {
+    document.getElementById('loader').style.display = 'block';
+    document.getElementById('booksContainer').style.display = 'none';
+    document.getElementById('errorMessage').style.display = 'none';
+}
+
+// Función para ocultar el loader
+function hideLoader() {
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('booksContainer').style.display = 'flex';
+}
+
+// Función para mostrar error
+function showError(message) {
+    const errorDiv = document.getElementById('errorMessage');
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+    hideLoader();
+}
+
+// Callback para manejar respuesta exitosa
+function handleBooksSuccess(data, callback) {
+    hideLoader();
+    
+    if (data && Array.isArray(data)) {
+        const source = document.getElementById('book-template').innerHTML;
+        const template = Handlebars.compile(source);
+        
+        const html = template({ books: data });
+        
+        document.getElementById('booksContainer').innerHTML = html;
+        
+        const countText = `Mostrando <strong>${data.length}</strong> libro${data.length !== 1 ? 's' : ''}`;
+        document.getElementById('bookCount').innerHTML = countText;
+        
+        if (callback && typeof callback === 'function') {
+            callback(data);
+        }
+    } else {
+        document.getElementById('booksContainer').innerHTML = 
+            '<div class="col-12"><div class="alert alert-info text-center"><h4>No hay libros disponibles</h4></div></div>';
+        document.getElementById('bookCount').innerHTML = 'No hay libros';
+    }
+}
+
+function handleBooksError(error, callback) {
+    console.error('Error al cargar libros:', error);
+    showError('Error al cargar los libros. Por favor, intenta nuevamente.');
+    
+    if (callback && typeof callback === 'function') {
+        callback(error);
+    }
+}
+
+function loadBooks(filterType, successCallback, errorCallback) {
+    showLoader();
+    currentFilter = filterType;
+    
+    document.querySelectorAll('.btn-group button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    if (event && event.target) {
+        event.target.classList.add('active');
+    }
+    
+    let url = '/api/books/';
+    if (filterType === 'virtual') {
+        url += '?tipo=virtual';
+    } else if (filterType === 'fisico') {
+        url += '?tipo=fisico';
+    }
+    
+    // Realizar petición Fetch
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        handleBooksSuccess(data, successCallback);
+    })
+    .catch(error => {
+        handleBooksError(error, errorCallback);
+    });
+}
+
+function searchBooks() {
+    const searchTerm = document.getElementById('searchInput').value.trim();
+    
+    if (!searchTerm) {
+        loadBooks(currentFilter);
+        return;
+    }
+    
+    showLoader();
+    
+    fetch(`/api/search/?q=${encodeURIComponent(searchTerm)}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            handleBooksSuccess(data.results, (books) => {
+                console.log(`Búsqueda completada: ${books.length} resultados`);
+            });
+        } else {
+            showError(data.message || 'Error en la búsqueda');
+        }
+    })
+    .catch(error => {
+        handleBooksError(error);
+    });
+}
+
+// Función para comprar libro usando Fetch con Callbacks
+function buyBook(bookId) {
+    if (!confirm('¿Confirmar la compra de este libro?')) {
+        return;
+    }
+    
+    fetch(`/api/books/${bookId}/buy/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            // Recargar libros después de la compra 
+            loadBooks(currentFilter, (books) => {
+                console.log('Libros actualizados después de compra');
+            });
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error en la compra:', error);
+        alert('Error al procesar la compra. Intenta nuevamente.');
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Cargar libros al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    loadBooks('all', (books) => {
+        console.log(`Página cargada con ${books.length} libros`);
+    });
+});
+
+const searchInput = document.getElementById('searchInput');
+if (searchInput) {
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchBooks();
+        }
+    });
+}
+</script>
+
+<style>
+.book-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.book-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+}
+
+#loader {
+    min-height: 200px;
+}
+</style>
+{% endblock %}

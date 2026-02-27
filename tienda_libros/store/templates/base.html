@@ -40,5 +40,17 @@
     <footer class="custom-footer text-white p-3 mt-4 text-center">
         <p class="mb-0">&copy; 2025 Librería. Todos los derechos reservados. | <a href="{% url 'contact' %}" class="text-white text-decoration-none">Contacto</a></p>
     </footer>
+
+</body>
+</html>
+
+    <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+            var swUrl = "{% static 'service-worker.js' %}";
+            navigator.serviceWorker.register(swUrl).catch(function(e){ console.warn('SW registro falló', e); });
+        });
+    }
+    </script>
 </body>
 </html>

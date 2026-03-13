@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.views.generic import TemplateView
 from django.urls import include, path
 from django.contrib.auth import views as auth_views
 from .views import book_detail, buy_book, contact, home, read_ebook, upload_book, register, delete_book, payment_screen
@@ -16,6 +17,7 @@ urlpatterns = [
     path('logout/', auth_views.LogoutView.as_view(next_page='/'), name='logout'),
     path('book/<int:book_id>/delete/', delete_book, name='delete_book'),
     path('book/<int:book_id>/buy/', payment_screen, name='payment_screen'),
+    path("sw.js", TemplateView.as_view( template_name="sw.js", content_type="application/javascript" ), name="sw.js",),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

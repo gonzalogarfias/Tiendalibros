@@ -11,7 +11,7 @@
 </div>
 
 <div class="container my-4" id="libros">
-    <h2 class="mb-4">Nuestros Libros (Carga Dinámica)</h2>
+    <h2 class="mb-4">Nuestros Libros </h2>
     
     <!-- Barra de búsqueda -->
     <div class="mb-4">
@@ -144,24 +144,22 @@ function showError(message) {
 function handleBooksSuccess(data, callback) {
     hideLoader();
     
-    if (data && Array.isArray(data)) {
+    // DRF a veces envuelve la lista en 'results' (especialmente en búsquedas)
+    const booksArray = Array.isArray(data) ? data : (data.results || []);
+
+    if (booksArray.length > 0) {
         const source = document.getElementById('book-template').innerHTML;
         const template = Handlebars.compile(source);
-        
-        const html = template({ books: data });
+        const html = template({ books: booksArray });
         
         document.getElementById('booksContainer').innerHTML = html;
+        document.getElementById('bookCount').innerHTML = `Mostrando <strong>${booksArray.length}</strong> libro${booksArray.length !== 1 ? 's' : ''}`;
         
-        const countText = `Mostrando <strong>${data.length}</strong> libro${data.length !== 1 ? 's' : ''}`;
-        document.getElementById('bookCount').innerHTML = countText;
-        
-        if (callback && typeof callback === 'function') {
-            callback(data);
-        }
+        if (callback) callback(booksArray);
     } else {
         document.getElementById('booksContainer').innerHTML = 
-            '<div class="col-12"><div class="alert alert-info text-center"><h4>No hay libros disponibles</h4></div></div>';
-        document.getElementById('bookCount').innerHTML = 'No hay libros';
+            '<div class="col-12"><div class="alert alert-info text-center">No hay libros disponibles</div></div>';
+        document.getElementById('bookCount').innerHTML = '0 libros';
     }
 }
 
@@ -248,33 +246,35 @@ function searchBooks() {
 
 // Función para comprar libro usando Fetch con Callbacks
 function buyBook(bookId) {
-    if (!confirm('¿Confirmar la compra de este libro?')) {
-        return;
-    }
-    
+    if (!confirm('¿Confirmar la compra de este libro?')) return;
+
+    // La URL debe coincidir con la que genera el Router de DRF
     fetch(`/api/books/${bookId}/buy/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken'),
+            'X-CSRFToken': getCookie('csrftoken'), // Muy importante para POST en Django
             'X-Requested-With': 'XMLHttpRequest'
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            // Manejo de errores 400 (como "Sin stock")
+            return response.json().then(err => { throw err; });
+        }
+        return response.json();
+    })
     .then(data => {
+        // Tu ViewSet devuelve { "success": true, "message": "...", "book": {...} }
         if (data.success) {
             alert(data.message);
-            // Recargar libros después de la compra 
-            loadBooks(currentFilter, (books) => {
-                console.log('Libros actualizados después de compra');
-            });
-        } else {
-            alert(data.message);
+            // Recargamos solo la lista de libros para ver el stock actualizado
+            loadBooks(currentFilter); 
         }
     })
     .catch(error => {
         console.error('Error en la compra:', error);
-        alert('Error al procesar la compra. Intenta nuevamente.');
+        alert(error.message || 'Error al procesar la compra.');
     });
 }
 

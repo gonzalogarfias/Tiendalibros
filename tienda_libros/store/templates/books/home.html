@@ -1,0 +1,254 @@
+{% extends 'layout/base.html' %}
+{% load static %}
+
+{% block title %}Librería{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="hero-button-container">
+        <a href="#libros" class="btn btn-primary btn-lg">Explorar Libros</a>
+    </div>
+</div>
+
+<div class="container my-4" id="libros">
+    <h2 class="mb-4">Nuestros Libros</h2>
+    
+    <!-- Barra de búsqueda -->
+    <div class="mb-4">
+        <div class="input-group">
+            <input type="text" id="searchInput" class="form-control" placeholder="Buscar por título o autor...">
+            <button class="btn btn-primary" onclick="searchBooks()">Buscar</button>
+        </div>
+    </div>
+    
+    <!-- Filtros -->
+    <div class="btn-group mb-4" role="group">
+        <button class="btn btn-outline-primary active" onclick="loadBooks('all')">Todos</button>
+        <button class="btn btn-outline-success" onclick="loadBooks('virtual')">Libros Virtuales (Leer Gratis)</button>
+        <button class="btn btn-outline-danger" onclick="loadBooks('fisico')">Libros Físicos (Comprar)</button>
+    </div>
+    
+    <!-- Contador -->
+    <p class="text-muted" id="bookCount">Cargando libros...</p>
+    
+    <!-- Loader -->
+    <div id="loader" class="text-center my-5" style="display: none;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+        <p class="mt-2">Cargando libros...</p>
+    </div>
+    
+    <!-- Contenedor de libros -->
+    <div id="booksContainer" class="row">
+        <!-- Los cards se insertan aquí vía JS -->
+    </div>
+    
+    <!-- Mensaje de error -->
+    <div id="errorMessage" class="alert alert-danger" style="display: none;"></div>
+</div>
+
+{% verbatim %}
+<script id="book-template" type="text/x-handlebars-template">
+    {{#each books}}
+    <div class="col-md-4 mb-4 book-fade-in">
+        <div class="card h-100 shadow-sm book-card" data-book-id="{{id}}">
+            {{#if cover_image_url}}
+                <img src="{{cover_image_url}}" class="card-img-top" style="height: 250px; object-fit: cover;" alt="{{title}}">
+            {{else}}
+                <div class="bg-light text-center p-5" style="height: 250px;">
+                    <h5 class="text-muted">Sin portada</h5>
+                </div>
+            {{/if}}
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">{{title}}</h5>
+                <p class="card-text text-muted">por {{author}}</p>
+                <p class="card-text"><strong>${{price}}</strong></p>
+                <p class="card-text small">{{description}}</p>
+                {{#if uploaded_by_username}}
+                    <p class="card-text small text-muted">Subido por: {{uploaded_by_username}}</p>
+                {{/if}}
+                <div class="mt-auto">
+                    {{#if is_virtual}}
+                        <a href="/read/{{id}}/" class="btn btn-success w-100">Leer Ahora</a>
+                    {{else}}
+                        {{#if (gt stock 0)}}
+                            <button class="btn btn-primary w-100" onclick="AddToCart({{id}})">
+                                Comprar (Stock: {{stock}})
+                            </button>
+                        {{else}}
+                            <button class="btn btn-secondary w-100" disabled>Sin Stock</button>
+                        {{/if}}
+                    {{/if}}
+                </div>
+            </div>
+            <div class="card-footer text-center small">
+                {{#if is_virtual}}
+                    <span class="badge bg-success">Lectura Online Gratis</span>
+                {{else}}
+                    <span class="badge bg-danger">Libro Físico</span>
+                {{/if}}
+            </div>
+        </div>
+    </div>
+    {{/each}}
+</script>
+{% endverbatim %}
+
+<script src="https://cdn.jsdelivr.net/npm/handlebars@latest/dist/handlebars.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/handlebars@latest/dist/handlebars.js"></script>
+
+<script>
+let currentFilter = 'all';
+
+// Helper de Handlebars
+Handlebars.registerHelper('gt', (a, b) => a > b);
+
+function showLoader() {
+    document.getElementById('loader').style.display = 'block';
+    document.getElementById('booksContainer').style.display = 'none';
+    document.getElementById('errorMessage').style.display = 'none';
+}
+
+function hideLoader() {
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('booksContainer').style.display = 'flex';
+}
+
+function showError(message) {
+    const errorDiv = document.getElementById('errorMessage');
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+    hideLoader();
+}
+
+function handleBooksSuccess(data) {
+    hideLoader();
+    
+    const booksArray = Array.isArray(data) ? data : (data.results || []);
+
+    const container = document.getElementById('booksContainer');
+    const countText = document.getElementById('bookCount');
+
+    if (booksArray.length > 0) {
+        const source = document.getElementById('book-template').innerHTML;
+        const template = Handlebars.compile(source);
+        container.innerHTML = template({ books: booksArray });
+        countText.innerHTML = `Mostrando <strong>${booksArray.length}</strong> libro${booksArray.length !== 1 ? 's' : ''}`;
+    } else {
+        container.innerHTML = `
+            <div class="col-12 text-center my-5">
+                <div class="alert alert-info">No se encontraron libros que coincidan con tu búsqueda.</div>
+            </div>`;
+        countText.innerHTML = '0 libros encontrados';
+    }
+}
+
+function loadBooks(filterType = null) {
+    if (filterType) {
+        currentFilter = filterType;
+        document.querySelectorAll('.btn-group button').forEach(btn => btn.classList.remove('active'));
+        if (event && event.currentTarget.tagName === 'BUTTON') event.currentTarget.classList.add('active');
+    }
+
+    const searchTerm = document.getElementById('searchInput').value.trim();
+    showLoader();
+
+    let url = `/api/books/?tipo=${currentFilter}`;
+    if (searchTerm) {
+        url += `&q=${encodeURIComponent(searchTerm)}`;
+    }
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            hideLoader();
+            const books = Array.isArray(data) ? data : data.results;
+            renderBooks(books);
+        })
+        .catch(err => {
+            console.error(err);
+            document.getElementById('errorMessage').style.display = 'block';
+            hideLoader();
+        });
+}
+
+function renderBooks(books) {
+    const container = document.getElementById('booksContainer');
+    const countText = document.getElementById('bookCount');
+
+    if (books && books.length > 0) {
+        const source = document.getElementById('book-template').innerHTML;
+        const template = Handlebars.compile(source);
+        container.innerHTML = template({ books: books });
+        countText.innerHTML = `Mostrando <strong>${books.length}</strong> libros`;
+    } else {
+        container.innerHTML = '<div class="alert alert-info w-100 text-center">No hay libros que coincidan.</div>';
+        countText.innerHTML = '0 libros';
+    }
+    const cards = container.querySelectorAll('.book-fade-in');
+    cards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.1}s`;
+    });
+}
+
+function searchBooks() {
+    loadBooks(); 
+}
+
+function AddToCart(bookId) {
+    fetch(`/api/cart/add/${bookId}/`, { 
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'), 
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ "quantity": 1 }) 
+    })
+    .then(response => {
+        if (response.status === 403 || response.status === 401) {
+            window.location.href = '/login/';
+            return;
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data && data.success) {
+            window.location.href = '/checkout/'; 
+        } else if (data) {
+            alert(data.message);
+        }
+    })
+    .catch(error => console.error('Error en carrito:', error));
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadBooks('all');
+
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchBooks();
+        });
+    }
+});
+</script>
+
+{% endblock %}

@@ -4,22 +4,27 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from .models import Book
 from .serializers import BookSerializer
+from django.db import models
 
 class BookViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet para operaciones CRUD de libros
-    """
     queryset = Book.objects.all()
     serializer_class = BookSerializer
     
     def get_queryset(self):
         queryset = Book.objects.all()
-        tipo = self.request.query_params.get('tipo', None)
         
+        tipo = self.request.query_params.get('tipo', None)
         if tipo == 'virtual':
             queryset = queryset.filter(is_virtual=True)
         elif tipo == 'fisico':
             queryset = queryset.filter(is_virtual=False)
+            
+        query = self.request.query_params.get('q', None)
+        if query:
+            queryset = queryset.filter(
+                models.Q(title__icontains=query) | 
+                models.Q(author__icontains=query)
+            )
         
         return queryset.order_by('-uploaded_at')
     

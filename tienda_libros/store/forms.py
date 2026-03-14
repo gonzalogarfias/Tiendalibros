@@ -27,3 +27,4 @@ class PaymentForm(forms.Form):
     expiration_date = forms.CharField(label='Fecha de Vencimiento', max_length=5, min_length=5, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'MM/AA'}))
     cvc = forms.CharField(label='CVC', max_length=3, min_length=3, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'XXX'}))
     card_holder_name = forms.CharField(label='Nombre del Titular', max_length=100, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    

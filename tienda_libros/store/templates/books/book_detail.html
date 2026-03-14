@@ -1,0 +1,50 @@
+{% extends 'layout/base.html' %}
+
+{% block title %}{{ book.title }}{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-4">
+            {% if book.cover_image %}
+                <img src="{{ book.cover_image.url }}" class="img-fluid" alt="Portada de {{ book.title }}">
+            {% else %}
+                <img src="https://via.placeholder.com/300x400?text=No+Image" class="img-fluid" alt="Sin portada">
+            {% endif %}
+        </div>
+        <div class="col-md-8">
+            <h2>{{ book.title }}</h2>
+            <p><strong>Autor:</strong> {{ book.author }}</p>
+            <p><strong>Precio:</strong> ${{ book.price }}</p>
+            <p><strong>Tipo:</strong> {% if book.is_virtual %}Virtual{% else %}Físico{% endif %}</p>
+            <p><strong>Descripción:</strong> {{ book.description }}</p>
+            {% if not book.is_virtual %}
+                <p><strong>Stock disponible:</strong> {{ book.stock }}</p>
+            {% endif %}
+            <div class="d-grid gap-2 d-md-block">
+                {% if book.is_virtual and book.ebook_file %}
+                    <a href="{% url 'read_ebook' book.id %}" class="btn btn-success btn-lg">
+                        Leer Online Gratis
+                    </a>
+                    <a href="{{ book.ebook_file.url }}" class="btn btn-outline-success btn-lg" download>
+                        Descargar PDF
+                    </a>
+                {% else %}
+                    {% if not already_bought %}
+                        <a href="{% url 'payment_screen' book.id %}" class="btn btn-success btn-lg">
+                            {% if book.is_virtual %}Comprar{% else %}Comprar físico{% endif %}
+                        </a>
+                    {% else %}
+                        <p class="text-success">¡Ya has comprado este libro!</p>
+                    {% endif %}
+                {% endif %}
+
+                {% if user.is_authenticated and user == book.uploaded_by or user.is_authenticated and user.is_superuser %}
+                    <form action="{% url 'delete_book' book.id %}" method="post" class="d-inline-block mt-2 mt-md-0">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-lg" onclick="return confirm('¿Estás seguro de que quieres eliminar este libro?');">Eliminar Libro</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,35 +1,28 @@
-/* Estilos personalizados para la librería */
-
 :root {
-    --primary-color: #003366; /* Azul Profundo - Texto, Botones Principales */
-    --secondary-color: #333333; /* Gris Cálido Oscuro - Texto Secundario, Íconos */
-    --background-light: #F9F7F3; /* Blanco Roto - Fondo Principal */
-    --text-dark: #003366; /* Azul Profundo */
-    --text-light: #F9F7F3; /* Blanco Roto */
-    --accent-color: #C7924F; /* Dorado/Ocre - Acento, Destacados */
-    --secondary-accent-color: #A8B99E; /* Verde Salvia Suave - Color Secundario */
+    --primary-color: #003366;          /* Azul Profundo - Texto, Botones Principales */
+    --secondary-color: #333333;        /* Gris Cálido Oscuro - Texto Secundario */
+    --background-light: #F9F7F3;       /* Blanco Roto - Fondo Principal */
+    --text-dark: #003366;
+    --text-light: #F9F7F3;
+    --accent-color: #C7924F;           /* Dorado/Ocre - Acentos */
+    --secondary-accent-color: #A8B99E; /* Verde Salvia Suave */
 
-    /* Colores específicos para header y footer */
-    --header-bg-color: var(--primary-color); /* Fondo del header: Azul Profundo */
-    --footer-bg-color: var(--primary-color); /* Fondo del footer: Azul Profundo */
+    --header-bg-color: var(--primary-color);
+    --footer-bg-color: var(--primary-color);
 }
 
-.custom-header {
-    background-color: var(--header-bg-color);
-}
-
-.custom-footer {
-    background-color: var(--footer-bg-color);
-}
-
+/* General */
 body {
-    font-family: 'Georgia', serif; /* Una fuente clásica para una librería */
+    font-family: 'Georgia', serif;
     background-color: var(--background-light);
     color: var(--text-dark);
+    margin: 0;
 }
 
+/* Header / Navbar */
+.custom-header,
 .navbar {
-    background-color: var(--header-bg-color); /* Usa el color del header */
+    background-color: var(--header-bg-color);
 }
 
 .navbar-brand {
@@ -37,6 +30,7 @@ body {
     color: var(--text-light) !important;
 }
 
+/* Footer */
 .custom-footer {
     background-color: var(--footer-bg-color);
     color: var(--text-light);
@@ -45,35 +39,14 @@ body {
     margin-top: 40px;
 }
 
-/* Estilos para las tarjetas de libros */
-.card {
-    border: none;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    transition: transform 0.2s;
-    border-radius: 8px;
-}
-
-.card:hover {
-    transform: translateY(-5px);
-}
-
-.card-title {
-    font-size: 1.25rem;
-    font-weight: bold;
-    color: var(--primary-color); /* Usa Azul Profundo */
-}
-
-.card-text {
-    color: var(--secondary-color); /* Usa Gris Cálido Oscuro */
-}
-
+/* Botones generales */
 .btn-primary {
-    background-color: var(--accent-color); /* Usa Dorado/Ocre */
+    background-color: var(--accent-color);
     border-color: var(--accent-color);
 }
 
 .btn-primary:hover {
-    background-color: #B07E3A; /* Un tono más oscuro de Dorado/Ocre */
+    background-color: #B07E3A;
     border-color: #B07E3A;
 }
 
@@ -83,7 +56,7 @@ body {
 }
 
 .btn-logout-danger:hover {
-    background-color: #dc3545; /* Rojo de Bootstrap para peligro */
+    background-color: #dc3545;
     border-color: #dc3545;
     color: var(--text-light);
 }
@@ -95,27 +68,45 @@ body {
 }
 
 .btn-cancel-danger:hover {
-    background-color: #dc3545; /* Rojo de Bootstrap para peligro */
+    background-color: #dc3545;
     border-color: #dc3545;
     color: var(--text-light);
 }
 
-/* Estilos para la sección llamativa de la página principal */
+/* ============================================= */
+/* Hero Section (Banner principal)              */
+/* ============================================= */
+
 .hero-section {
     background: url('../img/banner.png') no-repeat center center;
     background-size: cover;
     color: var(--text-light);
     text-align: center;
-    padding: 160px 0; /* Aumentado para dar más altura al banner */
+    padding: 160px 0;
     margin-bottom: 40px;
     border-radius: 8px;
-    position: relative; /* Añadido para posicionamiento absoluto del botón */
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-section::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.35), rgba(0,0,0,0.6));
+    z-index: 1;
+}
+
+.hero-section > * {
+    position: relative;
+    z-index: 2;
 }
 
 .hero-button-container {
     position: absolute;
-    bottom: 20px; /* Ajusta según sea necesario */
-    right: 20px; /* Ajusta según sea necesario */
+    bottom: 30px;
+    right: 30px;
+    z-index: 2;
 }
 
 .hero-section h1 {
@@ -132,4 +123,202 @@ body {
 .hero-section .btn {
     font-size: 1.2rem;
     padding: 10px 30px;
+}
+
+/* ============================================= */
+/* Tarjetas de libros + página de inicio        */
+/* ============================================= */
+
+.card {
+    border: none;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 28px rgba(0,0,0,0.14);
+}
+
+.card-title {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.card-text {
+    color: var(--secondary-color);
+}
+
+.book-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.book-card .card-img-top {
+    height: 250px;
+    object-fit: cover;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.book-card .card-body {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.book-card .mt-auto {
+    margin-top: auto;
+}
+
+.card-footer {
+    background-color: rgba(0, 0, 0, 0.03);
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    font-size: 0.875rem;
+}
+
+/* Contenedor de libros (grid) */
+#booksContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+/* Loader */
+#loader {
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 0;
+}
+
+/* Media queries (opcional - ajusta según necesites) */
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 100px 0;
+    }
+    .hero-section h1 {
+        font-size: 2.5rem;
+    }
+    .hero-button-container {
+        bottom: 20px;
+        right: 20px;
+        left: 20px;
+        text-align: center;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.book-fade-in {
+    animation: fadeInUp 0.6s ease-out forwards;
+}
+
+/* Opcional: Evita que se vea el salto si el contenedor se ajusta */
+#booksContainer {
+    transition: all 0.4s ease-in-out;
+}
+.checkout-summary-card {
+    background-color: white;                /* o var(--background-light) si prefieres el crema */
+    border-radius: 12px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+    padding: 2.5rem;
+    border: 1px solid rgba(199, 146, 79, 0.18);  /* dorado muy sutil */
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.checkout-summary-card h2 {
+    color: var(--accent-color);
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+
+.checkout-table {
+    background-color: transparent;
+    border: none;
+}
+
+.checkout-table thead th {
+    background-color: rgba(199, 146, 79, 0.08);  /* fondo dorado muy claro */
+    color: var(--primary-color);
+    text-transform: uppercase;
+    font-size: 0.95rem;
+    letter-spacing: 0.8px;
+    border-bottom: 2px solid var(--accent-color);
+    padding: 1rem;
+}
+
+.checkout-table tbody td {
+    vertical-align: middle;
+    padding: 1.2rem 1rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    color: var(--text-dark);
+}
+
+.checkout-table .price-column {
+    color: var(--accent-color);
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.total-section h3 {
+    font-size: 1.8rem;
+    color: var(--primary-color);
+}
+
+.total-section .total-amount {
+    color: var(--accent-color);
+    font-weight: bold;
+}
+
+.total-section hr {
+    border-color: var(--accent-color);
+    opacity: 0.4;
+    margin: 1.5rem 0;
+}
+
+/* Contenedor del botón PayPal */
+.paypal-container {
+    max-width: 400px;
+    margin-left: auto;
+}
+
+@media (max-width: 576px) {
+    .checkout-summary-card {
+        padding: 1.5rem;
+    }
+    
+    .checkout-summary-card h2 {
+        font-size: 1.8rem;
+    }
+    
+    .total-section h3 {
+        font-size: 1.6rem;
+    }
+    
+    .paypal-container {
+        max-width: 100%;
+    }
+}
+
+/* Opcional: si quieres un efecto fade-in al cargar el resumen */
+.checkout-summary-card {
+    animation: fadeInUp 0.6s ease-out forwards;
 }

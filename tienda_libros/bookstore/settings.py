@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -100,7 +101,7 @@ else:
             'USER': 'postgres',
             'PASSWORD': '1234',
             'HOST': '127.0.0.1',
-            'PORT': '5432',
+            'PORT': '5433',
         }
     }
 

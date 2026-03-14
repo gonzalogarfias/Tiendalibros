@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import StreamingHttpResponse, Http404
+from django.http import JsonResponse, StreamingHttpResponse, Http404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
@@ -72,6 +72,50 @@ def contact(request):
     
     return render(request, 'contact.html', {'form': form})
 
+def book_list_api(request):
+    tipo = request.GET.get('tipo')
+    
+    if tipo == 'virtual':
+        books = Book.objects.filter(is_virtual=True)
+    elif tipo == 'fisico':
+        books = Book.objects.filter(is_virtual=False)
+    else:
+        books = Book.objects.all()
+    
+    data = []
+    for book in books:
+        data.append({
+            'id': book.id,
+            'title': book.title,
+            'author': book.author,
+            'price': str(book.price), 
+            'description': book.description,
+            'cover_image_url': book.cover_image.url if book.cover_image else None,
+            'is_virtual': book.is_virtual,
+            'stock': book.stock,
+            'uploaded_by_username': book.uploaded_by.username if book.uploaded_by else "Anónimo"
+        })
+    
+    return JsonResponse(data, safe=False)
+
+def book_search_api(request):
+    query = request.GET.get('q', '')
+    books = Book.objects.filter(title__icontains=query) | Book.objects.filter(author__icontains=query)
+    
+    results = []
+    for book in books:
+        results.append({
+            'id': book.id,
+            'title': book.title,
+            'author': book.author,
+            'price': str(book.price),
+            'cover_image_url': book.cover_image.url if book.cover_image else None,
+            'is_virtual': book.is_virtual,
+            'stock': book.stock,
+        })
+    
+    return JsonResponse({'success': True, 'results': results})
+
 def book_detail(request, book_id):
     book = get_object_or_404(Book, id=book_id)
     
@@ -114,7 +158,6 @@ def delete_book(request, book_id):
         book.delete()
         return redirect('home')
     else:
-        # Optionally, add a message for unauthorized deletion attempts
         return redirect('book_detail', book_id=book.id)
 
 @login_required
@@ -123,7 +166,6 @@ def payment_screen(request, book_id):
     if request.method == 'POST':
         form = PaymentForm(request.POST)
         if form.is_valid():
-            # Simulate payment processing
             messages.success(request, '¡Pago realizado con éxito!')
             return redirect('book_detail', book_id=book.id)
     else:

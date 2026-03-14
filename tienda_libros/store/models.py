@@ -9,8 +9,7 @@ class Book(models.Model):
     cover_image = models.ImageField(upload_to='book_covers/', null=True, blank=True)
     ebook_file = models.FileField(upload_to='ebooks/', null=True, blank=True)
     is_virtual = models.BooleanField(default=True)  
-    stock = models.IntegerField(default=0) # Añadido para el stock de libros físicos
-
+    stock = models.IntegerField(default=0) 
     uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 

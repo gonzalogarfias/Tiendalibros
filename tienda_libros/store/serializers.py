@@ -16,3 +16,4 @@ class BookSerializer(serializers.ModelSerializer):
         if obj.cover_image:
             return obj.cover_image.url
         return None
+    

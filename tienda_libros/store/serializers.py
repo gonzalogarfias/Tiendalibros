@@ -2,9 +2,7 @@ from rest_framework import serializers
 from .models import Book
 
 class BookSerializer(serializers.ModelSerializer):
-    # Esto permite que el JS lea "uploaded_by_username" como espera tu template
     uploaded_by_username = serializers.ReadOnlyField(source='uploaded_by.username')
-    # Asegura que la URL de la imagen sea completa
     cover_image_url = serializers.SerializerMethodField()
 
     class Meta:

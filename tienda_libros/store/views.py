@@ -82,14 +82,13 @@ def book_list_api(request):
     else:
         books = Book.objects.all()
     
-    # Creamos una lista de diccionarios con los datos que Handlebars necesita
     data = []
     for book in books:
         data.append({
             'id': book.id,
             'title': book.title,
             'author': book.author,
-            'price': str(book.price), # Convertir Decimal a string para JSON
+            'price': str(book.price), 
             'description': book.description,
             'cover_image_url': book.cover_image.url if book.cover_image else None,
             'is_virtual': book.is_virtual,
@@ -159,7 +158,6 @@ def delete_book(request, book_id):
         book.delete()
         return redirect('home')
     else:
-        # Optionally, add a message for unauthorized deletion attempts
         return redirect('book_detail', book_id=book.id)
 
 @login_required
@@ -168,7 +166,6 @@ def payment_screen(request, book_id):
     if request.method == 'POST':
         form = PaymentForm(request.POST)
         if form.is_valid():
-            # Simulate payment processing
             messages.success(request, '¡Pago realizado con éxito!')
             return redirect('book_detail', book_id=book.id)
     else:

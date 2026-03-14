@@ -107,16 +107,13 @@
 </script>
 {% endverbatim %}
 
-<!-- Incluir Handlebars desde CDN -->
 <script src="https://cdn.jsdelivr.net/npm/handlebars@latest/dist/handlebars.js"></script>
 
 <script>
-// Registrar helper personalizado para Handlebars
 Handlebars.registerHelper('gt', function(a, b) {
     return a > b;
 });
 
-// Variable para almacenar el filtro actual
 let currentFilter = 'all';
 
 // Función para mostrar el loader
@@ -248,27 +245,23 @@ function searchBooks() {
 function buyBook(bookId) {
     if (!confirm('¿Confirmar la compra de este libro?')) return;
 
-    // La URL debe coincidir con la que genera el Router de DRF
     fetch(`/api/books/${bookId}/buy/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken'), // Muy importante para POST en Django
+            'X-CSRFToken': getCookie('csrftoken'), 
             'X-Requested-With': 'XMLHttpRequest'
         }
     })
     .then(response => {
         if (!response.ok) {
-            // Manejo de errores 400 (como "Sin stock")
             return response.json().then(err => { throw err; });
         }
         return response.json();
     })
     .then(data => {
-        // Tu ViewSet devuelve { "success": true, "message": "...", "book": {...} }
         if (data.success) {
             alert(data.message);
-            // Recargamos solo la lista de libros para ver el stock actualizado
             loadBooks(currentFilter); 
         }
     })

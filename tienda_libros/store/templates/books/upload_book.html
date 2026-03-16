@@ -1,26 +1,74 @@
 {% extends 'layout/base.html' %}
 {% block title %}Subir libro{% endblock %}
+
 {% block content %}
 <div class="container my-5">
-    <div class="card shadow-sm p-4">
-        <h2 class="card-title mb-4">Subir mi libro</h2>
-        <form method="post" enctype="multipart/form-data">
+    <div class="card shadow-sm p-4" style="border-left: 5px solid var(--accent-color);">
+        <h2 class="card-title mb-4" style="color: var(--primary-color);">Publicar en el Catálogo</h2>
+        
+        <form method="post" enctype="multipart/form-data" id="uploadForm">
             {% csrf_token %}
+            
             {% for field in form %}
-                <div class="mb-3">
-                    {{ field.label_tag }}
+                <div class="mb-3 field-container" data-field-name="{{ field.name }}">
+                    <label class="form-label font-weight-bold">{{ field.label }}</label>
                     {{ field }}
+                    
                     {% if field.help_text %}
-                        <div class="form-text">{{ field.help_text }}</div>
+                        <div class="form-text text-muted small">{{ field.help_text }}</div>
                     {% endif %}
+                    
                     {% for error in field.errors %}
-                        <div class="alert alert-danger mt-1">{{ error }}</div>
+                        <div class="text-danger small mt-1">
+                            <i class="fas fa-exclamation-circle"></i> {{ error }}
+                        </div>
                     {% endfor %}
                 </div>
             {% endfor %}
-            <button type="submit" class="btn btn-success btn-lg mt-3">Publicar libro</button>
-            <a href="{% url 'home' %}" class="btn btn-secondary btn-lg mt-3 btn-cancel-danger">Cancelar</a>
+
+            <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                <button type="submit" class="btn btn-primary btn-lg mt-3">Publicar ahora</button>
+                <a href="{% url 'home' %}" class="btn btn-cancel-danger btn-lg mt-3">Cancelar</a>
+            </div>
         </form>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const isVirtualCheckbox = document.getElementById('isVirtualCheck'); 
+    const ebookContainer = document.querySelector('[data-field-name="ebook_file"]');
+    const stockContainer = document.querySelector('[data-field-name="stock"]');
+    const priceField = document.querySelector('[data-field-name="price"] input');
+
+    function toggleFields() {
+        const isVirtual = isVirtualCheckbox.checked;
+
+        if (isVirtual) {
+            ebookContainer.style.display = 'block';
+            stockContainer.style.display = 'none';
+        } else {
+            ebookContainer.style.display = 'none';
+            stockContainer.style.display = 'block';
+        }
+    }
+
+    isVirtualCheckbox.addEventListener('change', toggleFields);
+    
+    toggleFields();
+});
+</script>
+
+<style>
+    /* Una pequeña transición para que no sea tan brusco el cambio */
+    .field-container {
+        transition: all 0.3s ease-in-out;
+    }
+    
+    label {
+        font-family: 'Georgia', serif;
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+</style>
 {% endblock %}

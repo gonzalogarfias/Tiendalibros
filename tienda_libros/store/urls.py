@@ -22,6 +22,7 @@ urlpatterns = [
     path('checkout/', views.view_cart, name='checkout'),
     path('api/cart/add/<int:book_id>/', views.add_to_cart_api, name='add_to_cart'),
     path('confirmar-pago/', views.confirmar_pago, name='confirmar_pago'),
+    path('api/cart/update/<int:item_id>/', views.update_cart_item, name='update_cart_item'),
 ]
 
 if settings.DEBUG:

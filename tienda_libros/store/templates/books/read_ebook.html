@@ -1,30 +1,212 @@
 {% extends 'layout/base.html' %}
 
-{% block title %}Leyendo: {{ book.title }}{% endblock %}
+{% block title %}Lectura: {{ book.title }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row mb-3 bg-light p-3 rounded shadow-sm">
-        <div class="col">
-            <h2>{{ book.title }}</h2>
-            <p class="text-muted mb-0">por {{ book.author }}</p>
-        </div>
-        <div class="col text-end">
-            <a href="{% url 'home' %}" class="btn btn-outline-secondary">Volver</a>
-            <a href="{{ book.ebook_file.url }}?download=1" class="btn btn-success" download>
-                Descargar PDF
-            </a>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
+
+<div id="reader-bg" class="container-fluid py-4 transition-all" style="background-color: var(--background-light); min-height: 100vh;">
+    
+    <div class="row justify-content-center mb-3">
+        <div class="col-md-11 col-lg-9">
+            <div class="card shadow-sm border-0" style="background-color: #1A1A1A;">
+                <div class="card-body d-flex flex-wrap justify-content-between align-items-center py-2 px-4">
+                    
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="btn-group btn-group-sm">
+                            <button onclick="setTheme('light')" class="btn btn-light border">☀</button>
+                            <button onclick="setTheme('sepia')" class="btn" style="background-color: #FFFDD0;">☁</button>
+                            <button onclick="setTheme('dark')" class="btn btn-dark">☾</button>
+                        </div>
+                        <div class="ms-2 btn-group btn-group-sm">
+                            <button onclick="changeFontSize(-2)" class="btn btn-outline-light">A-</button>
+                            <button onclick="changeFontSize(2)" class="btn btn-outline-light">A+</button>
+                        </div>
+                        <button onclick="addBookmark()" class="btn btn-sm btn-outline-warning ms-3" title="Añadir Marcador">
+                            <i class="fas fa-bookmark"></i> + Marcador
+                        </button>
+                        <button onclick="resetReader()" class="btn btn-sm btn-outline-danger ms-2" title="Reiniciar Ajustes">
+                            <i class="fas fa-undo"></i> Reiniciar
+                        </button>
+                    </div>
+
+                    <div class="text-white d-none d-md-block">
+                        <small class="text-muted">Leyendo:</small> {{ book.title }}
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="btn-group">
+                            <button id="prev" class="btn btn-sm btn-accent" style="background-color: #D4AF37; color: white;">←</button>
+                            <button id="next" class="btn btn-sm btn-accent" style="background-color: #D4AF37; color: white;">→</button>
+                        </div>
+                        <a href="{% url 'home' %}" class="btn btn-sm btn-danger ms-2">Cerrar</a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div style="width:100%; height:90vh; border:none; border-radius:8px; overflow:hidden;">
-        <iframe 
-            src="{{ book.ebook_file.url }}#view=FitH&toolbar=1&navpanes=1&scrollbar=1"
-            width="100%" 
-            height="100%" 
-            style="border:none;">
-            <p>Tu navegador no soporta PDFs. <a href="{{ book.ebook_file.url }}">Descarga el archivo aquí</a>.</p>
-        </iframe>
+    <div class="row justify-content-center">
+        <div class="col-md-2 d-none d-lg-block">
+            <div class="card shadow-sm h-100 border-0" style="background-color: rgba(255,255,255,0.5);">
+                <div class="card-header bg-transparent border-0 text-center">
+                    <h6 class="theme-text mb-0"><i class="fas fa-list-ul"></i> Marcadores</h6>
+                </div>
+                <div class="card-body p-2" id="bookmarks-list" style="max-height: 60vh; overflow-y: auto;">
+                    <p class="text-muted small text-center italic">No hay marcadores aún.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-10 col-lg-7">
+            <div id="viewer-wrapper" class="shadow-lg transition-all" 
+                 style="background-color: #FFFFFF; height: 75vh; border-radius: 8px; overflow: hidden; border: 1px solid rgba(0,0,0,0.1); position: relative;">
+                <div id="viewer" style="height: 100%;"></div>
+                <div id="book-loader" class="position-absolute top-50 start-50 translate-middle">
+                    <div class="spinner-border text-warning" role="status"></div>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-between mt-3 px-2 text-muted small">
+                <span id="location" class="theme-text">Cargando páginas...</span>
+                <span id="percentage" class="theme-text">0% leído</span>
+            </div>
+        </div>
     </div>
 </div>
+
+<script>
+    let fontSize = 100;
+    const bookId = "{{ book.id }}";
+    const book = ePub("{{ book.ebook_file.url }}");
+    const rendition = book.renderTo("viewer", {
+        width: "100%", height: "100%", flow: "paginated", manager: "default"
+    });
+
+    const savedLocation = localStorage.getItem(`book-progress-${bookId}`);
+    rendition.display(savedLocation || undefined);
+
+const themesCSS = {
+    light: {
+        body: { 'background': '#ffffff !important', 'color': '#1A1A1A !important', 'font-family': 'Georgia, serif !important' }
+    },
+    sepia: {
+        body: { 'background': '#FFFDD0 !important', 'color': '#5f4b32 !important', 'font-family': 'Georgia, serif !important' }
+    },
+    dark: {
+        body: { 'background': '#1A1A1A !important', 'color': '#E5E5E5 !important', 'font-family': 'Georgia, serif !important' }
+    }
+};
+
+Object.keys(themesCSS).forEach(n => rendition.themes.register(n, themesCSS[n]));
+
+function setTheme(mode) {
+    rendition.themes.select(mode);
+    
+    rendition.themes.override('background', themesCSS[mode].body.background);
+    rendition.themes.override('color', themesCSS[mode].body.color);
+
+    const bg = document.getElementById('reader-bg');
+    const wrap = document.getElementById('viewer-wrapper');
+    const texts = document.querySelectorAll('.theme-text');
+    
+    if(mode === 'dark'){
+        bg.style.backgroundColor = '#0b0b0b'; 
+        wrap.style.setProperty('background-color', '#1A1A1A', 'important');
+        texts.forEach(t => t.style.color = '#E5E5E5');
+    } else if(mode === 'sepia'){
+        bg.style.backgroundColor = '#f4f1ea'; 
+        wrap.style.setProperty('background-color', '#FFFDD0', 'important');
+        texts.forEach(t => t.style.color = '#5f4b32');
+    } else {
+        bg.style.backgroundColor = '#F9F7F3'; 
+        wrap.style.setProperty('background-color', '#ffffff', 'important');
+        texts.forEach(t => t.style.color = '#666');
+    }
+}
+
+    let bookmarks = JSON.parse(localStorage.getItem(`bookmarks-${bookId}`)) || [];
+
+    function addBookmark() {
+        const currentLocation = rendition.currentLocation();
+        const cfi = currentLocation.start.cfi;
+        const page = currentLocation.start.displayed.page;
+        
+        if (!bookmarks.some(b => b.cfi === cfi)) {
+            bookmarks.push({ cfi, page, time: new Date().toLocaleTimeString() });
+            localStorage.setItem(`bookmarks-${bookId}`, JSON.stringify(bookmarks));
+            renderBookmarks();
+        }
+    }
+
+    function removeBookmark(cfi) {
+        bookmarks = bookmarks.filter(b => b.cfi !== cfi);
+        localStorage.setItem(`bookmarks-${bookId}`, JSON.stringify(bookmarks));
+        renderBookmarks();
+    }
+
+    function renderBookmarks() {
+        const list = document.getElementById('bookmarks-list');
+        if (bookmarks.length === 0) {
+            list.innerHTML = '<p class="text-muted small text-center italic">No hay marcadores.</p>';
+            return;
+        }
+        list.innerHTML = bookmarks.map(b => `
+            <div class="d-flex justify-content-between align-items-center bg-white p-2 mb-2 rounded shadow-sm border-start border-warning border-4">
+                <a href="#" onclick="rendition.display('${b.cfi}')" class="text-decoration-none text-dark small">
+                    Pág. ${b.page} <br><span class="text-muted" style="font-size:0.7rem">${b.time}</span>
+                </a>
+                <button onclick="removeBookmark('${b.cfi}')" class="btn btn-sm text-danger">&times;</button>
+            </div>
+        `).join('');
+    }
+
+    function resetReader() {
+    if (confirm("¿Deseas restablecer los ajustes de lectura y volver al inicio?")) {
+        fontSize = 100;
+        rendition.themes.fontSize("100%");
+        setTheme('light');
+        localStorage.removeItem(`book-progress-${bookId}`);
+        rendition.display(0); 
+        
+        alert("Ajustes restablecidos.");
+    }
+}
+
+    rendition.on("relocated", (loc) => {
+        localStorage.setItem(`book-progress-${bookId}`, loc.start.cfi);
+        if (book.locations.length() > 0) {
+            const percent = book.locations.percentageFromCfi(loc.start.cfi);
+            document.getElementById("percentage").textContent = Math.round(percent * 100) + "% leído";
+            document.getElementById("location").textContent = `Página ${loc.start.displayed.page}`;
+        }
+        document.getElementById('book-loader').style.display = 'none';
+    });
+
+    function changeFontSize(d) {
+        fontSize = Math.max(60, Math.min(200, fontSize + d));
+        rendition.themes.fontSize(fontSize + "%");
+    }
+
+   book.ready.then(() => {
+    const currentMode = localStorage.getItem(`theme-${bookId}`) || 'light';
+    setTheme(currentMode);
+    renderBookmarks();
+    return book.locations.generate(1000);
+    });
+    document.getElementById("prev").onclick = () => rendition.prev();
+    document.getElementById("next").onclick = () => rendition.next();
+    window.onkeydown = (e) => {
+        if (e.key === "ArrowLeft") rendition.prev();
+        if (e.key === "ArrowRight") rendition.next();
+    };
+</script>
+
+<style>
+    .transition-all { transition: all 0.4s ease; }
+    #viewer iframe { border: none !important; }
+    .btn-accent:hover { opacity: 0.9; transform: scale(1.05); }
+    #bookmarks-list div:hover { background-color: #f8f9fa !important; cursor: pointer; }
+</style>
 {% endblock %}

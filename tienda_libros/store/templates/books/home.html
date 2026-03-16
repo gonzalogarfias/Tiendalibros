@@ -40,7 +40,7 @@
     </div>
     
     <!-- Contenedor de libros -->
-    <div id="booksContainer" class="row">
+    <div id="booksContainer" class="row g-4">
         <!-- Los cards se insertan aquí vía JS -->
     </div>
     
@@ -73,7 +73,7 @@
                         <a href="/read/{{id}}/" class="btn btn-success w-100">Leer Ahora</a>
                     {{else}}
                         {{#if (gt stock 0)}}
-                            <button class="btn btn-primary w-100" onclick="AddToCart({{id}})">
+                            <button class="btn btn-primary w-100" onclick="addToCart({{id}})">
                                 Comprar (Stock: {{stock}})
                             </button>
                         {{else}}
@@ -97,12 +97,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/handlebars@latest/dist/handlebars.js"></script>
 
-<script src="https://cdn.jsdelivr.net/npm/handlebars@latest/dist/handlebars.js"></script>
-
 <script>
 let currentFilter = 'all';
 
-// Helper de Handlebars
 Handlebars.registerHelper('gt', (a, b) => a > b);
 
 function showLoader() {
@@ -197,31 +194,39 @@ function searchBooks() {
     loadBooks(); 
 }
 
-function AddToCart(bookId) {
-    fetch(`/api/cart/add/${bookId}/`, { 
+function addToCart(bookId) {
+    const url = `/api/cart/add/${bookId}/`;
+
+    fetch(url, {
         method: 'POST',
         headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
             'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken'), 
-            'X-Requested-With': 'XMLHttpRequest'
+            'Accept': 'application/json'
         },
-        body: JSON.stringify({ "quantity": 1 }) 
+        body: JSON.stringify({}) 
     })
     .then(response => {
-        if (response.status === 403 || response.status === 401) {
-            window.location.href = '/login/';
+        if (response.status === 403) {
+            window.location.href = '/accounts/login/'; 
             return;
         }
         return response.json();
     })
     .then(data => {
-        if (data && data.success) {
+        if (data && data.status === 'success') {
+            const cartBadge = document.getElementById('cart-count');
+            if (cartBadge) cartBadge.innerText = data.total_items;
             window.location.href = '/checkout/'; 
+            
         } else if (data) {
-            alert(data.message);
+            alert(data.message || "Inicia sesión para comprar");
         }
     })
-    .catch(error => console.error('Error en carrito:', error));
+    .catch(error => {
+        console.error('Error:', error);
+        alert("Hubo un error al procesar la compra.");
+    });
 }
 
 function getCookie(name) {

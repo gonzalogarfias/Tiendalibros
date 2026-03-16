@@ -12,12 +12,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.staticfiles import finders
 from django.http import HttpResponse
 from django.views.decorators.cache import cache_control
+from django.http import HttpResponse, Http404
+from django.contrib.staticfiles import finders
 
 from .forms import BookUploadForm, ContactForm, PaymentForm
 from .models import Book, CartItem, Cart
 
-
-# --- GENERAL / PÚBLICO ---
 
 def home(request):
     tipo = request.GET.get('tipo')  
@@ -55,10 +55,13 @@ def contact(request):
 
 @cache_control(max_age=86400)
 def service_worker(request):
-    sw_path = finders.find('service-worker.js')
+    sw_path = finders.find('js/sw.js') 
+    
+    if not sw_path:
+        raise Http404("Archivo sw.js no encontrado en static/js/")
+
     with open(sw_path, 'rb') as f:
         return HttpResponse(f.read(), content_type='application/javascript')
-
 
 # --- GESTIÓN DE LIBROS ---
 
@@ -123,21 +126,72 @@ def view_cart(request):
     })
 
 @login_required
-def add_to_cart_api(request, book_id):
-    book = get_object_or_404(Book, id=book_id)
-    cart, _ = Cart.objects.get_or_create(user=request.user)
-    cart_item, created = CartItem.objects.get_or_create(cart=cart, book=book)
+def update_cart_item(request, item_id):
+    items_list = []
     
-    if not created:
-        cart_item.quantity += 1
-        cart_item.save()
+    if request.method == 'POST':
+        try:
+            cart = get_object_or_404(Cart, user=request.user)
+            data = json.loads(request.body)
+            action = data.get('action')
+            item = get_object_or_404(CartItem, id=item_id, cart__user=request.user)
+
+            if action == 'add':
+                if not item.book.is_virtual and item.quantity >= item.book.stock:
+                    return JsonResponse({'status': 'error', 'message': 'Sin stock suficiente'}, status=400)
+                item.quantity += 1
+                item.save()
+            elif action == 'remove':
+                item.quantity -= 1
+                if item.quantity <= 0:
+                    item.delete()
+                else:
+                    item.save()
+
+            for i in cart.items.all():
+                items_list.append({
+                    'id': i.id,
+                    'book_title': i.book.title,
+                    'book_price': str(i.book.price),
+                    'quantity': i.quantity,
+                    'total_item': str(i.total_price())
+                })
+
+            return JsonResponse({
+                'status': 'success',
+                'items': items_list,
+                'cart_total': str(cart.total_price())
+            })
+
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error', 
+                'message': str(e)
+            }, status=500)
+
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
+
+@login_required
+def add_to_cart_api(request, book_id):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Debes iniciar sesión'}, status=401)
+
+    if request.method == 'POST':
+        cart, created = Cart.objects.get_or_create(user=request.user)
+        book = Book.objects.get(id=book_id)
         
-    total_items = CartItem.objects.filter(cart=cart).count()
-    return JsonResponse({
-        'success': True, 
-        'message': f'"{book.title}" se agregó al carrito',
-        'cart_count': total_items
-    })
+        item, item_created = CartItem.objects.get_or_create(cart=cart, book=book)
+        
+        if not item_created:
+            item.quantity += 1
+            item.save()
+        total_items = sum(item.quantity for item in cart.items.all())
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': f'"{book.title}" añadido al carrito',
+            'total_items': total_items
+        })
 
 @csrf_exempt
 def confirmar_pago(request):

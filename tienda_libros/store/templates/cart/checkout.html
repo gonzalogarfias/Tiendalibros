@@ -86,7 +86,6 @@
     let currentTotal = "{{ total_del_carrito }}";
 
     function renderPayPalButton(amount) {
-        // Limpiamos el contenedor antes de renderizar el nuevo botón
         document.getElementById('paypal-button-container').innerHTML = '';
         
         paypal.Buttons({
@@ -117,23 +116,16 @@
         .then(res => res.json())
         .then(data => {
             if (data.status === 'success') {
-                // 1. Renderizar tabla con Handlebars
                 const source = document.getElementById('cart-template').innerHTML;
                 const template = Handlebars.compile(source);
                 document.getElementById('cart-container').innerHTML = template({ items: data.items });
-                
-                // 2. Actualizar Total en pantalla
                 document.getElementById('cart-total-display').innerText = `$${data.cart_total}`;
-                
-                // 3. RE-RENDERIZAR PAYPAL con el nuevo total
                 renderPayPalButton(data.cart_total);
             } else {
                 alert(data.message);
             }
         });
     }
-
-    // Render inicial
     document.addEventListener('DOMContentLoaded', () => {
         renderPayPalButton(currentTotal);
     });

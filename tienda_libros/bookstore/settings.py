@@ -14,17 +14,14 @@ import os
 from pathlib import Path
 
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-ey6=67=ks2!)p*pauj@*)#g@e3jvqnai)cy^b$%u3e$179k5dh')
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
@@ -39,15 +36,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',      # Django REST Framework - NUEVO
-    'corsheaders',         # CORS headers - NUEVO
+    'rest_framework',      
+    'corsheaders',         
     'store',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # WhiteNoise para archivos estáticos - NUEVO
-    'corsheaders.middleware.CorsMiddleware',        # CORS - NUEVO
+    'whitenoise.middleware.WhiteNoiseMiddleware',  
+    'corsheaders.middleware.CorsMiddleware',        
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -69,7 +66,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'django.template.context_processors.media',  # Para servir archivos media - NUEVO
+                'django.template.context_processors.media', 
             ],
         },
     },
@@ -78,13 +75,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'bookstore.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-# Usar variable de entorno DATABASE_URL si existe (producción)
-# Si no existe, usar configuración local (desarrollo)
 if os.environ.get('DATABASE_URL'):
-    # Producción (Railway, Render, etc.)
     import dj_database_url
     DATABASES = {
         'default': dj_database_url.config(
@@ -128,8 +119,8 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'es-mx'  # Cambié a español México
-TIME_ZONE = 'America/Mexico_City'  # Cambié a tu zona horaria
+LANGUAGE_CODE = 'es-mx'  
+TIME_ZONE = 'America/Mexico_City'  
 USE_I18N = True
 USE_TZ = True
 
@@ -138,14 +129,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # NUEVO - Para producción
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  
 
-# Directorios adicionales de archivos estáticos (si los tienes)
 STATICFILES_DIRS = []
 if os.path.exists(os.path.join(BASE_DIR, 'store/static')):
     STATICFILES_DIRS.append(os.path.join(BASE_DIR, 'store/static'))
 
-# WhiteNoise - Para servir archivos estáticos en producción - NUEVO
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
@@ -154,7 +143,6 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
-# Django REST Framework - NUEVO
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
@@ -168,7 +156,6 @@ REST_FRAMEWORK = {
 }
 
 
-# CORS Configuration - NUEVO
 CORS_ALLOWED_ORIGINS = os.environ.get(
     'CORS_ALLOWED_ORIGINS',
     'http://localhost:3000,http://127.0.0.1:3000'
@@ -177,34 +164,27 @@ CORS_ALLOWED_ORIGINS = os.environ.get(
 CORS_ALLOW_CREDENTIALS = True
 
 
-# Security Settings - Solo en producción
 if not DEBUG:
-    # HTTPS/SSL
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     
-    # Security headers
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
     
-    # HSTS
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     
-    # Trusted origins para CSRF (Railway/Render)
     CSRF_TRUSTED_ORIGINS = [
         'https://*.railway.app',
         'https://*.onrender.com',
     ]
 else:
-    # Desarrollo
     X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 
-# Email Configuration
 EMAIL_BACKEND = os.environ.get(
     'EMAIL_BACKEND',
     'django.core.mail.backends.smtp.EmailBackend'
@@ -223,13 +203,11 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'nwoi jtlx iwxj gjda
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# Authentication redirects
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 LOGIN_URL = '/login/'
 
 
-# Logging - NUEVO
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
